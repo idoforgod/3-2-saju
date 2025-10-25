@@ -1,4 +1,4 @@
-import type { SajuInput } from './types';
+import type { SajuInput } from '@/lib/validation/schemas';
 
 /**
  * 사주 분석 프롬프트 생성 함수

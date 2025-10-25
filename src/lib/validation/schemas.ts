@@ -49,6 +49,11 @@ export const sajuInputSchema = z.object({
 });
 
 /**
+ * 사주 분석 입력 타입
+ */
+export type SajuInput = z.infer<typeof sajuInputSchema>;
+
+/**
  * 이메일 검증 스키마
  */
 export const emailSchema = z
