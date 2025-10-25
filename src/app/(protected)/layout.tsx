@@ -1,34 +1,42 @@
-"use client";
+import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
+import { createSupabaseServerClient } from '@/lib/supabase/server-client';
+import { SubscriptionProvider } from '@/app/providers/subscription-provider';
+import type { Database } from '@/lib/supabase/types';
 
-import { useEffect, type ReactNode } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
-import { LOGIN_PATH } from "@/constants/auth";
+export default async function ProtectedLayout({
+  children
+}: {
+  children: React.ReactNode
+}) {
+  const { userId } = await auth();
 
-const buildRedirectUrl = (pathname: string) => {
-  const redirectUrl = new URL(LOGIN_PATH, window.location.origin);
-  redirectUrl.searchParams.set("redirectedFrom", pathname);
-  return redirectUrl.toString();
-};
-
-type ProtectedLayoutProps = {
-  children: ReactNode;
-};
-
-export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
-  const { isAuthenticated, isLoading } = useCurrentUser();
-  const router = useRouter();
-  const pathname = usePathname();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.replace(buildRedirectUrl(pathname));
-    }
-  }, [isAuthenticated, isLoading, pathname, router]);
-
-  if (!isAuthenticated) {
-    return null;
+  if (!userId) {
+    redirect('/sign-in');
   }
 
-  return <>{children}</>;
+  const supabase = await createSupabaseServerClient();
+
+  // 구독 정보 조회
+  type SubscriptionRow = Database['public']['Tables']['subscriptions']['Row'];
+  const { data: subscription } = await supabase
+    .from('subscriptions')
+    .select('plan_type, quota, status, next_payment_date')
+    .eq('clerk_user_id', userId)
+    .single() as { data: Pick<SubscriptionRow, 'plan_type' | 'quota' | 'status' | 'next_payment_date'> | null };
+
+  const initialData = subscription ? {
+    planType: subscription.plan_type,
+    quota: subscription.quota,
+    status: subscription.status,
+    nextPaymentDate: subscription.next_payment_date || undefined,
+  } : null;
+
+  return (
+    <SubscriptionProvider initialData={initialData}>
+      <div className="min-h-screen bg-gray-50">
+        {children}
+      </div>
+    </SubscriptionProvider>
+  );
 }

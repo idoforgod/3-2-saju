@@ -3,12 +3,14 @@ import { errorBoundary } from '@/backend/middleware/error';
 import { withAppContext } from '@/backend/middleware/context';
 import { withSupabase } from '@/backend/middleware/supabase';
 import { registerExampleRoutes } from '@/features/example/backend/route';
+import { registerAnalysisRoutes } from '@/features/analysis/backend/route';
 import type { AppEnv } from '@/backend/hono/context';
 
 let singletonApp: Hono<AppEnv> | null = null;
 
 export const createHonoApp = () => {
-  if (singletonApp) {
+  // development 환경에서는 HMR을 위해 매번 재생성
+  if (singletonApp && process.env.NODE_ENV === 'production') {
     return singletonApp;
   }
 
@@ -19,8 +21,11 @@ export const createHonoApp = () => {
   app.use('*', withSupabase());
 
   registerExampleRoutes(app);
+  registerAnalysisRoutes(app);
 
-  singletonApp = app;
+  if (process.env.NODE_ENV === 'production') {
+    singletonApp = app;
+  }
 
   return app;
 };
