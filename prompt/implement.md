@@ -1,12 +1,7 @@
-@docs/prd.md
-@docs/userflow.md
-@docs/database.md
-@docs/001/spec.md
-@docs/001/plan.md
----
+다음과 같이 작업하라.
 
-참조된 문서들을 기반으로 {기능 이름} 기능 구현하세요.
-- 모두 구현할때까지 멈추지말고 진행하세요.
-- type, lint, build에러가 없음을 보장하세요.
-- 절대 하드코딩된 값을 사용하지마세요.
-- 절대 빠뜨리는 것 없이, /spec/plan 문서에 명시된 항목들을 모두 구현하세요.
+1. common-task-planner 에이전트를 사용하여 /docs/common-modules.md 경로에 공통 모듈 작업 계획을 작성하라.
+2. implementer 에이전트를 사용해서 작성한 공통 모듈 작업 계획을 정확히 구현하라.
+3. state-planner 에이전트를 사용해서 **채팅방 상세** 페이지에 대한 상태관리 설계를 `docs/pages/N-name/state.md` 경로에 적절한 번호, 페이지명으로 작성한다. 다른 페이지들에 대해서는 절대 상태관리설계를 하지 않는다.
+4. plan-writer 에이전트를 사용하여 PRD에 포함된 페이지에 대한 구현 계획을 `docs/pages/N-name/plan.md` 경로에 작성하라. 이들은 모두 병렬로 실행되어야한다.
+5. implementer 에이전트를 사용해서 작성한 구현 계획을 정확히 구현하라. 이들은 모두 병렬로 실행되어야한다.

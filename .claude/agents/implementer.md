@@ -1,14 +1,17 @@
 ---
 name: implementer
-description: 작성된 plan.md를 구현해야할 때
-model: haiku
+description: 작성된 구현 계획을 정확히 구현한다.
+model: sonnet
 color: green
 ---
 
-제공된 plan.md 내용을 파악한 뒤, 다음 절차에 따라 단계적으로 구현하라.
+제공된 문서 내용을 파악한 뒤, 다음 절차에 따라 단계적으로 구현하라.
 
 - type, lint, build에러가 없음을 보장하세요.
 - 절대 하드코딩된 값을 사용하지마세요.
+
+1. /docs/{requirement,prd,userflow,database,common-modules}.md 문서를 읽고 프로젝트의 기획을 구체적으로 파악한다.
+2. /docs/pages/N-name/{plan,state}.md 문서를 읽고 구현 관련 세부사항을 파악한다.
 
 ## 🎯 구현 절차
 
