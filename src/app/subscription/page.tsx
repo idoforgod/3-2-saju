@@ -1,68 +1,116 @@
-import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import FreeSubscriptionView from './_components/free-subscription-view';
-import ProActiveView from './_components/pro-active-view';
-import ProCancelledView from './_components/pro-cancelled-view';
-import TerminatedView from './_components/terminated-view';
+'use client';
 
-export default async function SubscriptionPage() {
-  const { userId } = await auth();
+import { useState } from 'react';
+import { useSubscriptionStatus } from '@/features/subscription/hooks/use-subscription-status';
+import { useCancel } from '@/features/subscription/hooks/use-cancel';
+import { useReactivate } from '@/features/subscription/hooks/use-reactivate';
+import { SubscriptionStatusCard } from '@/features/subscription/components/subscription-status-card';
+import { ProPlanInfoCard } from '@/features/subscription/components/pro-plan-info-card';
+import { CancelConfirmModal } from '@/features/subscription/components/cancel-confirm-modal';
+import { ReactivateConfirmModal } from '@/features/subscription/components/reactivate-confirm-modal';
+import { toast } from 'sonner';
 
-  if (!userId) {
-    redirect('/login');
-  }
+export default function SubscriptionPage() {
+  const { subscription, isLoading, error } = useSubscriptionStatus();
+  const { cancel, isCancelling } = useCancel();
+  const { reactivate, isReactivating } = useReactivate();
 
-  const supabase = await createClient();
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showReactivateModal, setShowReactivateModal] = useState(false);
 
-  const { data: subscription, error } = await supabase
-    .from('subscriptions')
-    .select('plan_type, quota, status, next_payment_date, last_payment_date, cancelled_at')
-    .eq('clerk_user_id', userId)
-    .single();
+  const handleSubscribe = () => {
+    toast.info('토스페이먼츠 결제 위젯 연동이 필요합니다');
+    // TODO: 토스페이먼츠 위젯 모달 열기
+  };
 
-  if (error || !subscription) {
+  const handleCancelClick = () => {
+    setShowCancelModal(true);
+  };
+
+  const handleCancelConfirm = async () => {
+    try {
+      await cancel();
+      setShowCancelModal(false);
+      window.location.reload();
+    } catch (error) {
+      // 에러는 useCancel 훅에서 toast로 표시됨
+    }
+  };
+
+  const handleReactivateClick = () => {
+    setShowReactivateModal(true);
+  };
+
+  const handleReactivateConfirm = async () => {
+    try {
+      await reactivate();
+      setShowReactivateModal(false);
+      window.location.reload();
+    } catch (error) {
+      // 에러는 useReactivate 훅에서 toast로 표시됨
+    }
+  };
+
+  if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <p className="text-red-700">구독 정보를 불러올 수 없습니다.</p>
+      <div className="max-w-4xl mx-auto px-6 py-12">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-gray-200 rounded w-1/3" />
+          <div className="h-64 bg-gray-200 rounded" />
         </div>
       </div>
     );
   }
 
-  // Free 플랜
-  if (subscription.plan_type === 'free') {
-    return <FreeSubscriptionView quota={subscription.quota} />;
-  }
-
-  // Pro 플랜 - 활성
-  if (subscription.plan_type === 'pro' && subscription.status === 'active') {
+  if (error || !subscription) {
     return (
-      <ProActiveView
-        quota={subscription.quota}
-        nextPaymentDate={subscription.next_payment_date || ''}
-        lastPaymentDate={subscription.last_payment_date || ''}
-      />
+      <div className="max-w-4xl mx-auto px-6 py-12">
+        <div className="text-center">
+          <p className="text-xl text-red-600 mb-4">{error || '구독 정보를 불러올 수 없습니다'}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="text-purple-600 hover:underline"
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
     );
   }
 
-  // Pro 플랜 - 취소 예정
-  if (subscription.plan_type === 'pro' && subscription.status === 'cancelled') {
-    return (
-      <ProCancelledView
-        quota={subscription.quota}
-        nextPaymentDate={subscription.next_payment_date || ''}
-        cancelledAt={subscription.cancelled_at || ''}
+  return (
+    <div className="max-w-4xl mx-auto px-6 py-12">
+      <h1 className="text-3xl font-bold mb-8">구독 관리</h1>
+
+      <div className="space-y-6">
+        <SubscriptionStatusCard
+          subscription={subscription}
+          onSubscribe={handleSubscribe}
+          onCancel={handleCancelClick}
+          onReactivate={handleReactivateClick}
+        />
+
+        {subscription.planType === 'free' && <ProPlanInfoCard />}
+      </div>
+
+      {/* 구독 취소 확인 모달 */}
+      <CancelConfirmModal
+        open={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={handleCancelConfirm}
+        isLoading={isCancelling}
+        nextPaymentDate={subscription.nextPaymentDate}
       />
-    );
-  }
 
-  // 구독 해지됨
-  if (subscription.status === 'terminated') {
-    return <TerminatedView />;
-  }
-
-  // 기타 상태 (fallback)
-  return <FreeSubscriptionView quota={subscription.quota} />;
+      {/* 재활성화 확인 모달 */}
+      <ReactivateConfirmModal
+        open={showReactivateModal}
+        onClose={() => setShowReactivateModal(false)}
+        onConfirm={handleReactivateConfirm}
+        isLoading={isReactivating}
+        nextPaymentDate={subscription.nextPaymentDate}
+        billingKey={subscription.billingKey}
+      />
+    </div>
+  );
 }

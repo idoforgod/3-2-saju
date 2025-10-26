@@ -4,7 +4,7 @@ import { withAppContext } from '@/backend/middleware/context';
 import { withSupabase } from '@/backend/middleware/supabase';
 import { registerExampleRoutes } from '@/features/example/backend/route';
 import { registerAnalysisRoutes } from '@/features/analysis/backend/route';
-import { registerSubscriptionRoutes } from '@/features/subscription/backend/route';
+import { subscriptionRoutes } from '@/features/subscription/backend/route';
 import type { AppEnv } from '@/backend/hono/context';
 
 let singletonApp: Hono<AppEnv> | null = null;
@@ -23,7 +23,7 @@ export const createHonoApp = () => {
 
   registerExampleRoutes(app);
   registerAnalysisRoutes(app);
-  registerSubscriptionRoutes(app);
+  app.route('/api/subscription', subscriptionRoutes);
 
   if (process.env.NODE_ENV === 'production') {
     singletonApp = app;

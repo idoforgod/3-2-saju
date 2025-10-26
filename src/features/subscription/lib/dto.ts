@@ -1,8 +1,8 @@
-/**
- * 프론트엔드에서 사용할 구독 관련 DTO
- * backend/schema에서 재노출
- */
+// 프론트엔드에서 사용할 타입 재노출
 export type {
-  SubscriptionStatusResponse,
-  SubscriptionErrorResponse,
+  StatusResponse,
+  SubscribeRequest,
+  SubscribeResponse,
+  CancelResponse,
+  ReactivateResponse,
 } from '../backend/schema';
