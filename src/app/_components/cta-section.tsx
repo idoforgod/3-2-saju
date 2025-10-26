@@ -18,7 +18,7 @@ export function CTASection() {
         <Button
           size="lg"
           className="bg-white text-purple-600 shadow-xl hover:shadow-2xl hover:bg-gray-50 transition-all duration-200"
-          onClick={() => router.push("/login")}
+          onClick={() => router.push("/sign-in")}
         >
           무료로 시작하기
         </Button>

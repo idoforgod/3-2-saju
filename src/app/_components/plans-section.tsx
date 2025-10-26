@@ -88,7 +88,7 @@ export function PlansSection() {
       "마크다운 형식 결과",
     ],
     ctaText: "무료로 시작하기",
-    ctaAction: () => router.push("/login"),
+    ctaAction: () => router.push("/sign-in"),
   };
 
   const proPlan: PlanCardProps = {
@@ -105,7 +105,7 @@ export function PlansSection() {
     ],
     highlighted: true,
     ctaText: "Pro로 시작하기",
-    ctaAction: () => router.push("/login"),
+    ctaAction: () => router.push("/sign-in"),
   };
 
   return (

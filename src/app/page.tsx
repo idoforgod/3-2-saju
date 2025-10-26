@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { useAuth } from "@clerk/nextjs";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { HeroSection } from "./_components/hero-section";
@@ -12,17 +12,17 @@ import { CTASection } from "./_components/cta-section";
 
 export default function LandingPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useCurrentUser();
+  const { isSignedIn, isLoaded } = useAuth();
 
   // 로그인 사용자는 대시보드로 리다이렉트
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
+    if (isLoaded && isSignedIn) {
       router.replace("/dashboard");
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [isLoaded, isSignedIn, router]);
 
   // 로딩 중이거나 로그인 사용자는 아무것도 표시하지 않음
-  if (isLoading || isAuthenticated) {
+  if (!isLoaded || isSignedIn) {
     return null;
   }
 

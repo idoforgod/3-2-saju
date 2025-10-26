@@ -36,7 +36,7 @@ export function HeroSection() {
             <Button
               size="lg"
               className="bg-purple-600 text-white shadow-lg hover:shadow-xl hover:bg-purple-700 transition-all duration-200"
-              onClick={() => router.push("/login")}
+              onClick={() => router.push("/sign-in")}
             >
               무료로 시작하기 (3회 무료)
             </Button>
