@@ -1,50 +1,30 @@
 -- =====================================================
--- 구독제 사주분석 서비스 - 초기 스키마
+-- 구독제 사주분석 서비스 - 최소 스키마 v2.0
 -- 작성일: 2025-10-26
+-- 설계: YC 스타트업 CTO - 최소주의 원칙
 -- =====================================================
 
--- UUID 확장 활성화
+-- UUID 확장
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- =====================================================
--- 1. users 테이블
+-- 1. users
 -- =====================================================
 CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  clerk_user_id VARCHAR(255) UNIQUE NOT NULL,
+  clerk_user_id VARCHAR(255) PRIMARY KEY,
   email VARCHAR(255) NOT NULL,
   name VARCHAR(100),
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- 인덱스
-CREATE INDEX IF NOT EXISTS idx_users_clerk_id ON users(clerk_user_id);
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-
--- updated_at 자동 업데이트 트리거
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER update_users_updated_at
-  BEFORE UPDATE ON users
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
-COMMENT ON TABLE users IS 'Clerk 사용자 정보 동기화 테이블';
-COMMENT ON COLUMN users.clerk_user_id IS 'Clerk User ID (외래키 역할)';
+COMMENT ON TABLE users IS 'Clerk 사용자 동기화';
+COMMENT ON COLUMN users.clerk_user_id IS 'Clerk User ID (PK)';
 
 -- =====================================================
--- 2. subscriptions 테이블
+-- 2. subscriptions
 -- =====================================================
 CREATE TABLE IF NOT EXISTS subscriptions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id VARCHAR(255) REFERENCES users(clerk_user_id) ON DELETE CASCADE,
+  clerk_user_id VARCHAR(255) PRIMARY KEY REFERENCES users(clerk_user_id) ON DELETE CASCADE,
   plan_type VARCHAR(20) NOT NULL DEFAULT 'free',
   status VARCHAR(20) NOT NULL DEFAULT 'active',
   billing_key VARCHAR(255),
@@ -53,38 +33,39 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   last_payment_date DATE,
   cancelled_at TIMESTAMP,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  UNIQUE(user_id),
+
+  -- 비즈니스 규칙 강제
   CHECK (plan_type IN ('free', 'pro')),
   CHECK (status IN ('active', 'cancelled', 'terminated')),
-  CHECK (quota >= 0)
+  CHECK (
+    (plan_type = 'free' AND quota BETWEEN 0 AND 3) OR
+    (plan_type = 'pro' AND quota BETWEEN 0 AND 10)
+  ),
+  CHECK (
+    (plan_type = 'free') OR
+    (plan_type = 'pro' AND billing_key IS NOT NULL)
+  ),
+  CHECK (
+    (plan_type = 'free') OR
+    (status != 'active') OR
+    (status = 'active' AND next_payment_date IS NOT NULL)
+  )
 );
 
--- 인덱스
-CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
-CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
-CREATE INDEX IF NOT EXISTS idx_subscriptions_next_payment_date ON subscriptions(next_payment_date);
+-- Cron 쿼리 최적화 (파셜 인덱스)
+CREATE INDEX IF NOT EXISTS idx_next_payment_date ON subscriptions(next_payment_date)
+WHERE status = 'active' AND next_payment_date IS NOT NULL;
 
--- updated_at 자동 업데이트 트리거
-CREATE TRIGGER update_subscriptions_updated_at
-  BEFORE UPDATE ON subscriptions
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
-COMMENT ON TABLE subscriptions IS '구독 정보 및 쿼터 관리 테이블';
-COMMENT ON COLUMN subscriptions.plan_type IS 'free (무료 3회) | pro (월 10회)';
-COMMENT ON COLUMN subscriptions.status IS 'active (활성) | cancelled (취소 예약) | terminated (해지)';
-COMMENT ON COLUMN subscriptions.billing_key IS '토스페이먼츠 BillingKey (정기결제용)';
-COMMENT ON COLUMN subscriptions.quota IS '남은 분석 횟수 (Free: 3, Pro: 10)';
-COMMENT ON COLUMN subscriptions.next_payment_date IS '다음 결제일 (Pro 구독자만 해당)';
-COMMENT ON COLUMN subscriptions.cancelled_at IS '구독 취소 요청 시간 (재활성화 가능 기간 판단용)';
+COMMENT ON TABLE subscriptions IS '구독 및 쿼터 관리';
+COMMENT ON COLUMN subscriptions.quota IS 'Free: 0-3, Pro: 0-10';
+COMMENT ON COLUMN subscriptions.next_payment_date IS 'Pro 활성 구독 필수';
 
 -- =====================================================
--- 3. analyses 테이블
+-- 3. analyses
 -- =====================================================
 CREATE TABLE IF NOT EXISTS analyses (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id VARCHAR(255) REFERENCES users(clerk_user_id) ON DELETE CASCADE,
+  clerk_user_id VARCHAR(255) NOT NULL REFERENCES users(clerk_user_id) ON DELETE CASCADE,
   name VARCHAR(100) NOT NULL,
   birth_date DATE NOT NULL,
   birth_time VARCHAR(10),
@@ -92,37 +73,35 @@ CREATE TABLE IF NOT EXISTS analyses (
   result_markdown TEXT NOT NULL,
   model_used VARCHAR(50) NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
+  -- 데이터 검증
   CHECK (gender IN ('male', 'female')),
   CHECK (birth_date BETWEEN '1900-01-01' AND CURRENT_DATE),
-  CHECK (model_used IN ('gemini-2.5-flash', 'gemini-2.5-pro'))
+  CHECK (model_used IN ('gemini-2.5-flash', 'gemini-2.5-pro')),
+  CHECK (LENGTH(name) >= 2 AND LENGTH(name) <= 50)
 );
 
--- 인덱스
-CREATE INDEX IF NOT EXISTS idx_analyses_user_id ON analyses(user_id);
-CREATE INDEX IF NOT EXISTS idx_analyses_created_at ON analyses(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_analyses_user_created ON analyses(user_id, created_at DESC);
+-- 사용자별 최신 분석 조회 최적화 (커버링 인덱스)
+CREATE INDEX IF NOT EXISTS idx_analyses_user_created ON analyses(clerk_user_id, created_at DESC);
 
-COMMENT ON TABLE analyses IS '사주 분석 결과 저장 테이블';
-COMMENT ON COLUMN analyses.birth_time IS '출생시간 (HH:MM 형식, nullable - 시간 미상 가능)';
-COMMENT ON COLUMN analyses.result_markdown IS 'Gemini AI가 생성한 분석 결과 (마크다운)';
-COMMENT ON COLUMN analyses.model_used IS '사용된 Gemini 모델 (flash: 무료, pro: 유료)';
+COMMENT ON TABLE analyses IS '사주 분석 결과';
+COMMENT ON COLUMN analyses.birth_time IS 'HH:MM 또는 NULL (시간 미상)';
 
 -- =====================================================
--- 4. RLS 비활성화 (요구사항)
+-- 4. RLS 비활성화
 -- =====================================================
 ALTER TABLE users DISABLE ROW LEVEL SECURITY;
 ALTER TABLE subscriptions DISABLE ROW LEVEL SECURITY;
 ALTER TABLE analyses DISABLE ROW LEVEL SECURITY;
 
 -- =====================================================
--- 완료 메시지
+-- 완료
 -- =====================================================
 DO $$
 BEGIN
-  RAISE NOTICE '✅ 초기 스키마 마이그레이션 완료';
-  RAISE NOTICE '   - users 테이블 생성';
-  RAISE NOTICE '   - subscriptions 테이블 생성';
-  RAISE NOTICE '   - analyses 테이블 생성';
-  RAISE NOTICE '   - 인덱스 및 트리거 설정 완료';
-  RAISE NOTICE '   - RLS 비활성화 완료';
+  RAISE NOTICE '✅ v2.0 스키마 마이그레이션 완료';
+  RAISE NOTICE '   - 테이블: 3개 (users, subscriptions, analyses)';
+  RAISE NOTICE '   - 인덱스: 2개 (효율적 최소화)';
+  RAISE NOTICE '   - CHECK 제약: 10개 (비즈니스 규칙 강제)';
+  RAISE NOTICE '   - 트리거: 0개 (불필요 제거)';
 END $$;
