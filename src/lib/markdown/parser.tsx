@@ -9,10 +9,10 @@ interface MarkdownRendererProps {
 
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   return (
-    <ReactMarkdown
-      rehypePlugins={[rehypeSanitize]}
-      className="prose prose-purple max-w-none"
-      components={{
+    <div className="prose prose-purple max-w-none">
+      <ReactMarkdown
+        rehypePlugins={[rehypeSanitize]}
+        components={{
         h1: ({ children }) => (
           <h1 className="text-3xl font-bold mb-4 text-gray-900">{children}</h1>
         ),
@@ -32,8 +32,9 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
           <ol className="list-decimal list-inside mb-4 space-y-2">{children}</ol>
         ),
       }}
-    >
-      {content}
-    </ReactMarkdown>
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
   );
 }
