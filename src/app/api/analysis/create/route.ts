@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server-client';
 import { sajuInputSchema } from '@/lib/validation/schemas';
-import { geminiClient } from '@/lib/gemini/client';
+import { analyzeWithGemini, getModelName } from '@/lib/gemini/client';
 import { generateSajuPrompt } from '@/lib/gemini/prompts';
 
 export async function POST(req: NextRequest) {
@@ -66,7 +66,8 @@ export async function POST(req: NextRequest) {
     const prompt = generateSajuPrompt(input);
     const isPro = subscription.plan_type === 'pro';
 
-    const analysisResult = await geminiClient.analyze(prompt, isPro);
+    const analysisResult = await analyzeWithGemini(prompt, isPro);
+    const modelUsed = getModelName(isPro);
 
     // 5. Supabase RPC: 쿼터 차감 + 분석 저장 (트랜잭션)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
         p_birth_time: input.birthTime ?? null,
         p_gender: input.gender,
         p_result_markdown: analysisResult,
-        p_model_used: isPro ? 'gemini-2.5-pro' : 'gemini-2.5-flash',
+        p_model_used: modelUsed,
       }
     );
 

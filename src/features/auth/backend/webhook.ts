@@ -1,12 +1,9 @@
 import { Webhook } from 'svix';
 import type { WebhookEvent } from '@clerk/backend';
 import { createSupabaseServerClient } from '@/lib/supabase/server-client';
-import type { Database } from '@/lib/supabase/types';
 
 /**
  * Clerk Webhook 이벤트 처리
- * @param payload - Webhook 요청 바디 (원본 문자열)
- * @param headers - Webhook 요청 헤더
  */
 export async function handleClerkWebhook(
   payload: string,
@@ -34,10 +31,10 @@ export async function handleClerkWebhook(
         await handleUserDeleted(evt.data);
         break;
       default:
-        console.log(`Unhandled webhook event type: ${evt.type}`);
+        console.log('Unhandled webhook event:', evt.type);
     }
 
-    return { success: true };
+    return { success: true, event: evt.type };
   } catch (error) {
     console.error('Webhook verification failed:', error);
     throw new Error('Invalid webhook signature');
@@ -46,66 +43,106 @@ export async function handleClerkWebhook(
 
 /**
  * user.created 이벤트 처리
- * subscriptions 테이블에 초기 구독 정보 INSERT (users 테이블은 Database v2.0에서 제거됨)
  */
 async function handleUserCreated(user: any) {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServerClient();
 
-  const insertData: Database['public']['Tables']['subscriptions']['Insert'] = {
-    clerk_user_id: user.id,
-    plan_type: 'free',
-    quota: 3,
-    status: 'active',
-  };
+  const email = user.email_addresses?.[0]?.email_address || '';
+  const firstName = user.first_name || '';
+  const lastName = user.last_name || '';
+  const name = firstName || lastName
+    ? (firstName + ' ' + lastName).trim()
+    : null;
 
-  const { error } = await supabase
-    .from('subscriptions')
-    // @ts-expect-error - Supabase SSR 타입 추론 이슈
-    .insert(insertData);
+  try {
+    const { error: userError } = await supabase
+      .from('users')
+      .insert({
+        clerk_user_id: user.id,
+        email,
+        name,
+      });
 
-  if (error) {
-    console.error('Failed to create subscription for user:', error);
+    if (userError) {
+      console.error('Failed to insert user:', userError);
+      throw userError;
+    }
+
+    const { error: subscriptionError } = await supabase
+      .from('subscriptions')
+      .insert({
+        clerk_user_id: user.id,
+        plan_type: 'free',
+        quota: 3,
+        status: 'active',
+      });
+
+    if (subscriptionError) {
+      console.error('Failed to insert subscription:', subscriptionError);
+      throw subscriptionError;
+    }
+
+    console.log('User created successfully:', user.id);
+  } catch (error) {
+    console.error('Error in handleUserCreated:', error);
     throw error;
   }
-
-  console.log(`Subscription created for user: ${user.id}`);
 }
 
 /**
  * user.updated 이벤트 처리
- * Database v2.0에서는 users 테이블이 없으므로 필요 시에만 구현
  */
 async function handleUserUpdated(user: any) {
-  console.log(`User updated: ${user.id}`);
-  // 필요 시 추가 로직 구현
+  const supabase = createSupabaseServerClient();
+
+  const email = user.email_addresses?.[0]?.email_address || '';
+  const firstName = user.first_name || '';
+  const lastName = user.last_name || '';
+  const name = firstName || lastName
+    ? (firstName + ' ' + lastName).trim()
+    : null;
+
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({
+        email,
+        name,
+      })
+      .eq('clerk_user_id', user.id);
+
+    if (error) {
+      console.error('Failed to update user:', error);
+      throw error;
+    }
+
+    console.log('User updated successfully:', user.id);
+  } catch (error) {
+    console.error('Error in handleUserUpdated:', error);
+    throw error;
+  }
 }
 
 /**
  * user.deleted 이벤트 처리
- * subscriptions와 analyses 테이블에서 clerk_user_id 기준으로 데이터 삭제
  */
 async function handleUserDeleted(user: any) {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseServerClient();
 
-  // subscriptions 삭제
-  const { error: subError } = await supabase
-    .from('subscriptions')
-    .delete()
-    .eq('clerk_user_id', user.id);
+  try {
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('clerk_user_id', user.id);
 
-  if (subError) {
-    console.error('Failed to delete subscription:', subError);
+    if (error) {
+      console.error('Failed to delete user:', error);
+      throw error;
+    }
+
+    console.log('User deleted successfully:', user.id);
+  } catch (error) {
+    console.error('Error in handleUserDeleted:', error);
+    throw error;
   }
-
-  // analyses 삭제
-  const { error: analysisError } = await supabase
-    .from('analyses')
-    .delete()
-    .eq('clerk_user_id', user.id);
-
-  if (analysisError) {
-    console.error('Failed to delete analyses:', analysisError);
-  }
-
-  console.log(`User data deleted for: ${user.id}`);
 }

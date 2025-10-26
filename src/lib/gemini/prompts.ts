@@ -1,18 +1,24 @@
-import type { SajuInput } from '@/lib/validation/schemas';
+export interface SajuInput {
+  name: string;
+  birthDate: string; // YYYY-MM-DD
+  birthTime?: string; // HH:MM
+  gender: 'male' | 'female';
+}
 
 /**
- * 사주 분석 프롬프트 생성 함수
- * @param input - 사용자 입력 정보 (이름, 생년월일, 출생시간, 성별)
- * @returns Gemini API에 전달할 프롬프트 문자열
+ * 사주 분석 프롬프트 생성
  */
 export function generateSajuPrompt(input: SajuInput): string {
+  const birthTimeText = input.birthTime || '시간 미상';
+  const genderText = input.gender === 'male' ? '남성' : '여성';
+
   return `당신은 20년 경력의 전문 사주팔자 상담사입니다.
 
 **입력 정보**:
 - 성함: ${input.name}
 - 생년월일: ${input.birthDate}
-- 출생시간: ${input.birthTime || '미상'}
-- 성별: ${input.gender === 'male' ? '남성' : '여성'}
+- 출생시간: ${birthTimeText}
+- 성별: ${genderText}
 
 **분석 요구사항**:
 1️⃣ 천간(天干)과 지지(地支) 계산

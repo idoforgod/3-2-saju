@@ -1,7 +1,14 @@
 import { z } from 'zod';
-import { sajuInputSchema } from './schemas';
+import {
+  nameSchema,
+  birthDateSchema,
+  birthTimeSchema,
+  genderSchema,
+  sajuInputSchema,
+} from './schemas';
 
-/**
- * 사주 분석 입력 타입 (Zod 스키마에서 추론)
- */
-export type SajuInputType = z.infer<typeof sajuInputSchema>;
+export type Name = z.infer<typeof nameSchema>;
+export type BirthDate = z.infer<typeof birthDateSchema>;
+export type BirthTime = z.infer<typeof birthTimeSchema>;
+export type Gender = z.infer<typeof genderSchema>;
+export type SajuInput = z.infer<typeof sajuInputSchema>;
