@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useSubscription } from '@/app/providers/subscription-provider';
 import { QuotaExhaustedModal } from './quota-exhausted-modal';
 import { AnalysisForm } from './analysis-form';
+import { Card } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 
 export default function NewAnalysisPage() {
@@ -31,8 +32,14 @@ export default function NewAnalysisPage() {
   // 로딩 중
   if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+      <div className="min-h-screen flex items-center justify-center gradient-purple-subtle">
+        <div className="text-center">
+          <div className="relative inline-flex items-center justify-center w-16 h-16 mb-4">
+            <div className="absolute inset-0 bg-primary/10 rounded-full blur-xl animate-pulse-slow" />
+            <Loader2 className="relative w-10 h-10 animate-spin text-primary" />
+          </div>
+          <p className="text-sm text-muted-foreground">로딩 중...</p>
+        </div>
       </div>
     );
   }
@@ -54,18 +61,24 @@ export default function NewAnalysisPage() {
 
   // 정상 진입
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-12 px-4">
+    <div className="min-h-screen gradient-purple-subtle py-12 sm:py-16 px-4 animate-fade-in">
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            새 사주 분석
-          </h1>
-          <p className="text-gray-600 mb-8">
-            정보를 입력하시면 AI가 사주를 분석해드립니다
-          </p>
+        <Card className="relative overflow-hidden border-2 border-border shadow-purple-xl p-6 sm:p-8 animate-fade-in-up">
+          {/* 배경 장식 */}
+          <div className="absolute top-0 right-0 w-64 h-64 gradient-purple opacity-5 blur-3xl pointer-events-none" />
+
+          {/* 헤더 */}
+          <div className="relative mb-8">
+            <h1 className="text-3xl sm:text-4xl font-bold mb-2">
+              <span className="text-gradient-purple">새 사주 분석</span>
+            </h1>
+            <p className="text-base text-muted-foreground">
+              정보를 입력하시면 AI가 사주를 분석해드립니다
+            </p>
+          </div>
 
           <AnalysisForm />
-        </div>
+        </Card>
       </div>
     </div>
   );

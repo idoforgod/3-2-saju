@@ -10,7 +10,8 @@ import { useSubscription } from '@/app/providers/subscription-provider';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles, Zap, Clock, Info } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export function AnalysisForm() {
   const { quota, planType, decrementQuota, refreshSubscription } = useSubscription();
@@ -108,125 +109,179 @@ export function AnalysisForm() {
     }
   };
 
+  const isPro = planType === 'pro';
+
   return (
     <div className="relative">
       {/* 쿼터 표시 */}
-      <div className="mb-6 p-4 bg-purple-50 rounded-lg">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-700">
-            남은 횟수: <span className="font-bold text-purple-600">{quota}회</span>
-          </span>
-          <span className="text-gray-700">
-            플랜: <span className="font-bold text-purple-600">{planType === 'pro' ? 'Pro' : '무료'}</span>
-          </span>
+      <div className="relative mb-8 p-4 sm:p-5 border-2 border-border rounded-xl bg-gradient-to-br from-card to-muted/30 shadow-purple-md">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-accent" />
+            <span className="text-sm text-muted-foreground">
+              남은 횟수: <span className="font-bold text-foreground">{quota}회</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {isPro ? (
+              <Zap className="w-5 h-5 text-primary fill-primary" />
+            ) : (
+              <Sparkles className="w-5 h-5 text-muted-foreground" />
+            )}
+            <span className="text-sm text-muted-foreground">
+              플랜: <span className={cn("font-bold", isPro ? "text-primary" : "text-foreground")}>{isPro ? 'Pro' : '무료'}</span>
+            </span>
+          </div>
         </div>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* 이름 */}
         <div>
-          <Label htmlFor="name">이름 *</Label>
+          <Label htmlFor="name" className="text-sm font-semibold text-foreground mb-2">
+            이름 *
+          </Label>
           <Input
             id="name"
             {...register('name')}
             placeholder="홍길동"
             disabled={isSubmitting}
-            className="mt-2"
+            className="mt-2 border-2 focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
           {errors.name && (
-            <p className="text-sm text-red-600 mt-1">{errors.name.message}</p>
+            <p className="text-sm text-destructive mt-2 flex items-center gap-1">
+              <Info className="w-3.5 h-3.5" />
+              {errors.name.message}
+            </p>
           )}
         </div>
 
         {/* 생년월일 */}
         <div>
-          <Label htmlFor="birthDate">생년월일 *</Label>
+          <Label htmlFor="birthDate" className="text-sm font-semibold text-foreground mb-2">
+            생년월일 *
+          </Label>
           <Input
             id="birthDate"
             type="date"
             {...register('birthDate')}
             disabled={isSubmitting}
-            className="mt-2"
+            className="mt-2 border-2 focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
           {errors.birthDate && (
-            <p className="text-sm text-red-600 mt-1">{errors.birthDate.message}</p>
+            <p className="text-sm text-destructive mt-2 flex items-center gap-1">
+              <Info className="w-3.5 h-3.5" />
+              {errors.birthDate.message}
+            </p>
           )}
         </div>
 
         {/* 출생시간 (선택) */}
         <div>
-          <Label htmlFor="birthTime">출생시간 (선택)</Label>
+          <Label htmlFor="birthTime" className="text-sm font-semibold text-foreground mb-2">
+            출생시간 (선택)
+          </Label>
           <Input
             id="birthTime"
             type="time"
             {...register('birthTime')}
             placeholder="14:30"
             disabled={isSubmitting}
-            className="mt-2"
+            className="mt-2 border-2 focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
           {errors.birthTime && (
-            <p className="text-sm text-red-600 mt-1">{errors.birthTime.message}</p>
+            <p className="text-sm text-destructive mt-2 flex items-center gap-1">
+              <Info className="w-3.5 h-3.5" />
+              {errors.birthTime.message}
+            </p>
           )}
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+            <Info className="w-3 h-3" />
             출생시간을 모르시면 비워두세요
           </p>
         </div>
 
         {/* 성별 */}
         <div>
-          <Label>성별 *</Label>
-          <div className="flex gap-4 mt-2">
-            <label className="flex items-center gap-2 cursor-pointer">
+          <Label className="text-sm font-semibold text-foreground mb-2">성별 *</Label>
+          <div className="flex gap-4 mt-3">
+            <label className="group flex items-center gap-2 cursor-pointer px-4 py-3 border-2 border-border rounded-lg hover:border-primary/50 hover:bg-primary/5 transition-all">
               <input
                 type="radio"
                 value="male"
                 {...register('gender')}
                 disabled={isSubmitting}
-                className="w-4 h-4 text-purple-600 focus:ring-purple-500"
+                className="w-4 h-4 text-primary focus:ring-primary focus:ring-2"
               />
-              <span className="text-sm">남성</span>
+              <span className="text-sm font-medium group-hover:text-primary transition-colors">남성</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="group flex items-center gap-2 cursor-pointer px-4 py-3 border-2 border-border rounded-lg hover:border-primary/50 hover:bg-primary/5 transition-all">
               <input
                 type="radio"
                 value="female"
                 {...register('gender')}
                 disabled={isSubmitting}
-                className="w-4 h-4 text-purple-600 focus:ring-purple-500"
+                className="w-4 h-4 text-primary focus:ring-primary focus:ring-2"
               />
-              <span className="text-sm">여성</span>
+              <span className="text-sm font-medium group-hover:text-primary transition-colors">여성</span>
             </label>
           </div>
           {errors.gender && (
-            <p className="text-sm text-red-600 mt-1">{errors.gender.message}</p>
+            <p className="text-sm text-destructive mt-2 flex items-center gap-1">
+              <Info className="w-3.5 h-3.5" />
+              {errors.gender.message}
+            </p>
           )}
         </div>
 
         {/* 제출 버튼 */}
-        <Button type="submit" disabled={isSubmitting} className="w-full">
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full gradient-purple text-white shadow-purple-lg hover:shadow-purple-xl hover:scale-105 transition-all duration-200"
+          size="lg"
+        >
           {isSubmitting ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              분석 중...
+              <Loader2 className="w-5 h-5 animate-spin mr-2" />
+              <span>분석 중...</span>
             </>
           ) : (
-            '분석 시작 (쿼터 1회 차감)'
+            <>
+              <Sparkles className="w-5 h-5 mr-2" />
+              <span>분석 시작 (쿼터 1회 차감)</span>
+            </>
           )}
         </Button>
 
         {/* 안내 메시지 */}
-        <p className="text-xs text-gray-500 text-center">
-          💡 Pro 구독 시 월 10회 + 고급 AI 모델 이용 가능
-        </p>
+        <div className="flex items-center justify-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
+          <Zap className="w-4 h-4 text-primary fill-primary" />
+          <p className="text-xs text-muted-foreground">
+            <span className="font-semibold text-primary">Pro 구독</span> 시 월 10회 + 고급 AI 모델 이용 가능
+          </p>
+        </div>
       </form>
 
       {/* 로딩 중 오버레이 */}
       {isSubmitting && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-8 text-center max-w-md mx-4">
-            <Loader2 className="w-16 h-16 animate-spin text-purple-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">{loadingMessage}</h3>
-            <p className="text-gray-600">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+          <div className="relative bg-card border-2 border-primary/20 rounded-2xl p-8 text-center max-w-md mx-4 shadow-purple-2xl animate-scale-in">
+            {/* 배경 장식 */}
+            <div className="absolute inset-0 gradient-purple opacity-5 blur-2xl rounded-2xl pointer-events-none" />
+
+            {/* 로딩 아이콘 */}
+            <div className="relative inline-flex items-center justify-center w-20 h-20 mb-6">
+              <div className="absolute inset-0 bg-primary/10 rounded-full blur-xl animate-pulse-slow" />
+              <Loader2 className="relative w-12 h-12 animate-spin text-primary" />
+            </div>
+
+            {/* 메시지 */}
+            <h3 className="relative text-xl sm:text-2xl font-bold text-foreground mb-2">
+              {loadingMessage}
+            </h3>
+            <p className="relative text-sm text-muted-foreground flex items-center justify-center gap-2">
+              <Clock className="w-4 h-4" />
               약 15-30초 소요됩니다
             </p>
           </div>
