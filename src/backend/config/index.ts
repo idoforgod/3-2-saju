@@ -2,24 +2,24 @@ import { z } from 'zod';
 import type { AppConfig } from '@/backend/hono/context';
 
 const envSchema = z.object({
-  // Supabase
+  // Supabase (필수)
   SUPABASE_URL: z.string().url(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 
-  // Clerk
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1),
-  CLERK_SECRET_KEY: z.string().min(1),
-  CLERK_WEBHOOK_SECRET: z.string().min(1),
+  // Clerk (선택적 - 없으면 경고만)
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().optional(),
+  CLERK_SECRET_KEY: z.string().optional(),
+  CLERK_WEBHOOK_SECRET: z.string().optional(),
 
-  // Gemini
-  GEMINI_API_KEY: z.string().min(1),
+  // Gemini (선택적 - 분석 기능 사용 시 필요)
+  GEMINI_API_KEY: z.string().optional(),
 
-  // Toss Payments
-  TOSS_SECRET_KEY: z.string().min(1),
-  NEXT_PUBLIC_TOSS_CLIENT_KEY: z.string().min(1),
+  // Toss Payments (선택적 - 결제 기능 사용 시 필요)
+  TOSS_SECRET_KEY: z.string().optional(),
+  NEXT_PUBLIC_TOSS_CLIENT_KEY: z.string().optional(),
 
-  // Cron
-  CRON_SECRET_TOKEN: z.string().min(1),
+  // Cron (선택적 - 주기적 작업 사용 시 필요)
+  CRON_SECRET_TOKEN: z.string().optional(),
 
   // App
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
