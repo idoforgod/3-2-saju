@@ -1,4 +1,4 @@
-import { clerkClient } from '@clerk/backend';
+import { createClerkClient } from '@clerk/backend';
 import type { MiddlewareHandler } from 'hono';
 import type { AppEnv } from '../hono/context';
 
@@ -17,8 +17,9 @@ export const withClerkAuth = (): MiddlewareHandler<AppEnv> => {
     }
 
     try {
-      const { sessionId } = await clerkClient().sessions.verifyToken(token);
-      const session = await clerkClient().sessions.getSession(sessionId);
+      const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+      const { sessionId } = await clerk.sessions.verifyToken(token);
+      const session = await clerk.sessions.getSession(sessionId);
 
       c.set('clerkUserId', session.userId);
       c.get('logger').info(`Clerk auth success: ${session.userId}`);
