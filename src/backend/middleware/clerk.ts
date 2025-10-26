@@ -1,4 +1,4 @@
-import { createClerkClient } from '@clerk/backend';
+import { createClerkClient, verifyToken } from '@clerk/backend';
 import type { MiddlewareHandler } from 'hono';
 import type { AppEnv } from '../hono/context';
 
@@ -17,12 +17,16 @@ export const withClerkAuth = (): MiddlewareHandler<AppEnv> => {
     }
 
     try {
-      const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
-      const { sessionId } = await clerk.sessions.verifyToken(token);
-      const session = await clerk.sessions.getSession(sessionId);
+      const payload = await verifyToken(token, {
+        secretKey: process.env.CLERK_SECRET_KEY,
+      });
 
-      c.set('clerkUserId', session.userId);
-      c.get('logger').info(`Clerk auth success: ${session.userId}`);
+      if (!payload.sub) {
+        throw new Error('No subject in token');
+      }
+
+      c.set('clerkUserId', payload.sub);
+      c.get('logger').info(`Clerk auth success: ${payload.sub}`);
 
       await next();
     } catch (error) {

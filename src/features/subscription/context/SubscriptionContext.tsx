@@ -4,7 +4,7 @@ import { createContext, useContext, ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@clerk/nextjs';
 import { apiClient } from '@/lib/remote/api-client';
-import type { SubscriptionStatusResponse } from '../backend/schema';
+import type { StatusResponse } from '../lib/dto';
 
 interface SubscriptionContextValue {
   planType: 'free' | 'pro';
@@ -27,7 +27,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   } = useQuery({
     queryKey: ['subscription', userId],
     queryFn: async () => {
-      const response = await apiClient.get<SubscriptionStatusResponse>('/api/subscription/status');
+      const response = await apiClient.get<StatusResponse>('/api/subscription/status');
       return response.data;
     },
     enabled: !!userId,

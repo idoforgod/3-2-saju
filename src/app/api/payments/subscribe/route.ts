@@ -25,10 +25,7 @@ export async function POST(req: NextRequest) {
     const userName = user.firstName || user.username || 'User';
 
     // 2. BillingKey 발급
-    billingKey = await tossPayments.issueBillingKey({
-      authKey,
-      customerKey,
-    });
+    billingKey = await tossPayments.issueBillingKey(authKey, customerKey);
 
     // 3. 첫 결제 실행 (9,900원)
     const payment = await tossPayments.chargeBilling({

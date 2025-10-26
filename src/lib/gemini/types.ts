@@ -1,4 +1,4 @@
-export type { SajuInput } from './prompts';
+export type { SajuInput } from '@/lib/validation/schemas';
 
 export interface AnalysisResult {
   markdown: string;

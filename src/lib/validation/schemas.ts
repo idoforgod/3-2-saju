@@ -32,3 +32,5 @@ export const sajuInputSchema = z.object({
   birthTime: birthTimeSchema,
   gender: genderSchema,
 });
+
+export type SajuInput = z.infer<typeof sajuInputSchema>;

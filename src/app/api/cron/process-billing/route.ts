@@ -13,15 +13,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   const today = new Date().toISOString().split('T')[0];
 
+  type SubscriptionRow = {
+    clerk_user_id: string;
+    billing_key: string;
+    user_email: string | null;
+    user_name: string | null;
+    plan_type: 'free' | 'pro';
+  };
+
   const { data: subscriptions, error } = await supabase
     .from('subscriptions')
-    .select('*')
+    .select('clerk_user_id, billing_key, user_email, user_name, plan_type')
     .eq('status', 'active')
-    .eq('next_payment_date', today);
+    .eq('next_payment_date', today)
+    .returns<SubscriptionRow[]>();
 
   if (error || !subscriptions) {
     console.error('Failed to fetch subscriptions:', error);
@@ -43,7 +52,8 @@ export async function POST(req: NextRequest) {
       const nextMonth = new Date(today);
       nextMonth.setMonth(nextMonth.getMonth() + 1);
 
-      await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
         .from('subscriptions')
         .update({
           quota: 10,
@@ -56,7 +66,8 @@ export async function POST(req: NextRequest) {
     } catch (error) {
       console.error('Payment failed for user:', sub.clerk_user_id, error);
 
-      await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
         .from('subscriptions')
         .update({
           status: 'terminated',

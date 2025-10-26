@@ -30,6 +30,6 @@ export function SubscriptionStatusCard({
     return <ProActivePlanCard subscription={subscription} onCancel={onCancel} />;
   }
 
-  // terminated �ܔ 4�\ ��
+  // terminated 상태는 무료 플랜으로 표시
   return <FreePlanCard subscription={subscription} onSubscribe={onSubscribe} />;
 }

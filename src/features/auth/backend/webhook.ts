@@ -43,9 +43,10 @@ export async function handleClerkWebhook(
 
 /**
  * user.created 이벤트 처리
+ * users 테이블은 제거되었으므로 subscriptions 테이블만 생성
  */
 async function handleUserCreated(user: any) {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   const email = user.email_addresses?.[0]?.email_address || '';
   const firstName = user.first_name || '';
@@ -55,26 +56,16 @@ async function handleUserCreated(user: any) {
     : null;
 
   try {
-    const { error: userError } = await supabase
-      .from('users')
-      .insert({
-        clerk_user_id: user.id,
-        email,
-        name,
-      });
-
-    if (userError) {
-      console.error('Failed to insert user:', userError);
-      throw userError;
-    }
-
-    const { error: subscriptionError } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: subscriptionError } = await (supabase as any)
       .from('subscriptions')
       .insert({
         clerk_user_id: user.id,
         plan_type: 'free',
         quota: 3,
         status: 'active',
+        user_email: email,
+        user_name: name,
       });
 
     if (subscriptionError) {
@@ -91,9 +82,10 @@ async function handleUserCreated(user: any) {
 
 /**
  * user.updated 이벤트 처리
+ * users 테이블이 없으므로 subscriptions 테이블의 user_email, user_name만 업데이트
  */
 async function handleUserUpdated(user: any) {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   const email = user.email_addresses?.[0]?.email_address || '';
   const firstName = user.first_name || '';
@@ -103,20 +95,21 @@ async function handleUserUpdated(user: any) {
     : null;
 
   try {
-    const { error } = await supabase
-      .from('users')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from('subscriptions')
       .update({
-        email,
-        name,
+        user_email: email,
+        user_name: name,
       })
       .eq('clerk_user_id', user.id);
 
     if (error) {
-      console.error('Failed to update user:', error);
+      console.error('Failed to update subscription user info:', error);
       throw error;
     }
 
-    console.log('User updated successfully:', user.id);
+    console.log('User info updated successfully:', user.id);
   } catch (error) {
     console.error('Error in handleUserUpdated:', error);
     throw error;
@@ -125,22 +118,25 @@ async function handleUserUpdated(user: any) {
 
 /**
  * user.deleted 이벤트 처리
+ * CASCADE DELETE로 analyses도 함께 삭제됨
  */
 async function handleUserDeleted(user: any) {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   try {
-    const { error } = await supabase
-      .from('users')
+    // subscriptions 삭제 (analyses는 CASCADE DELETE로 자동 삭제)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from('subscriptions')
       .delete()
       .eq('clerk_user_id', user.id);
 
     if (error) {
-      console.error('Failed to delete user:', error);
+      console.error('Failed to delete subscription:', error);
       throw error;
     }
 
-    console.log('User deleted successfully:', user.id);
+    console.log('User and related data deleted successfully:', user.id);
   } catch (error) {
     console.error('Error in handleUserDeleted:', error);
     throw error;

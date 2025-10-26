@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@clerk/backend": "^2.19.0",
+    "@clerk/localizations": "^3.26.3",
     "@clerk/nextjs": "^6.34.0",
     "@google/generative-ai": "^0.24.1",
     "@hono/zod-validator": "^0.7.4",

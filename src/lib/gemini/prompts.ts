@@ -1,9 +1,4 @@
-export interface SajuInput {
-  name: string;
-  birthDate: string; // YYYY-MM-DD
-  birthTime?: string; // HH:MM
-  gender: 'male' | 'female';
-}
+import type { SajuInput } from '@/lib/validation/schemas';
 
 /**
  * 사주 분석 프롬프트 생성
